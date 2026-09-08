@@ -29,22 +29,82 @@ V_tolerance = 60
 # Picked color in HSV format to be set later
 picked_color = None
 
-# Average the HSV values in a square around a point
-def sample_average_hsv(frame, x, y, square_size):
-    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    h, w = frame.shape[:2]
-    y1, y2 = max(0, y - half_square), min(h, y + half_square + 1)
-    x1, x2 = max(0, x - half_square), min(w, x + half_square + 1)
-    square = hsv_frame[y1:y2, x1:x2]
-    return square.mean(axis=(0, 1))
+# Center of the object in the previous frame
+previous_center = None
 
-# Mouse callback function to pick color on click
+# Average the HSV values in a square around a point using median value
+def sample_hsv(frame, x, y, square_size):
+    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    h, w = frame.shape[:2]
+
+    y1 = max(0, y - half_square)
+    y2 = min(h, y + half_square + 1)
+
+    x1 = max(0, x - half_square)
+    x2 = min(w, x + half_square + 1)
+
+    square = hsv_frame[y1:y2, x1:x2]
+
+    median_color = np.median(square, axis=(0, 1))
+    color_spread = np.std(square.astype(np.float32), axis=(0, 1))
+
+    return median_color, color_spread
+
+# Get the center of any contour
+def get_contour_center(contour):
+    M = cv2.moments(contour)
+
+    if M["m00"] == 0:
+        return None
+
+    cX = int(M["m10"] / M["m00"])
+    cY = int(M["m01"] / M["m00"])
+
+    return (cX, cY)
+
+# Mouse callback function to pick color on click, more adaptive implementation
 def on_mouse_click(event, x, y, flags, param):
-    global picked_color
+    global picked_color, previous_center
+    global H_tolerance, S_tolerance, V_tolerance
+
     if event == cv2.EVENT_LBUTTONDOWN:
         frame = param
-        picked_color = sample_average_hsv(frame, x, y, square_size)
+
+        picked_color, color_spread = sample_hsv(
+            frame,
+            x,
+            y,
+            square_size
+        )
+
+        H_tolerance = int(np.clip(
+            8 + 2 * color_spread[0],
+            8,
+            25
+        ))
+
+        S_tolerance = int(np.clip(
+            30 + 2 * color_spread[1],
+            40,
+            100
+        ))
+
+        V_tolerance = int(np.clip(
+            30 + 2 * color_spread[2],
+            40,
+            100
+        ))
+
+        previous_center = None
+
         print(f"Picked color (HSV): {picked_color}")
+        print(
+            f"HSV tolerances: "
+            f"H={H_tolerance}, "
+            f"S={S_tolerance}, "
+            f"V={V_tolerance}"
+        )
 
 # Main loop to capture frames and process them
 while(True):
@@ -89,16 +149,29 @@ while(True):
             ]
 
             if valid_contours:
-                largest_contour = max(valid_contours, key=cv2.contourArea)
+                if previous_center is None:
+                    target_contour = max(valid_contours, key=cv2.contourArea)
+                else:
+                    target_contour = min(
+                        valid_contours,
+                        key=lambda contour: (
+                            (get_contour_center(contour)[0] - previous_center[0]) ** 2
+                            + (get_contour_center(contour)[1] - previous_center[1]) ** 2
+                        )
+                    )
 
             # Draw a bounding box around the largest contour
-            x, y, w, h = cv2.boundingRect(largest_contour)
+            x, y, w, h = cv2.boundingRect(target_contour)
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             # Find the centroid of the largest contour and draw it
-            M = cv2.moments(largest_contour)
+            M = cv2.moments(target_contour)
             if M["m00"] != 0:
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
+                previous_center = (cX, cY) # Save centroid as previous_center
+
+                print(f"Object location: ({cX}, {cY})")
+
                 cv2.circle(frame, (cX, cY), 5, (255, 0, 0), -1)
                 cv2.putText(frame, f"({cX}, {cY})", (cX + 10, cY - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
