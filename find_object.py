@@ -7,10 +7,15 @@ cap = cv2.VideoCapture(0)
 
 # Setup the windows and their sizes
 windows = ["Raw", "Thresholded", "Tracked"]
-win_width = 640
-win_height = 480
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, win_width)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, win_height)
+
+capture_width = 640
+capture_height = 480
+
+display_width = 400
+display_height = 300
+
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, capture_width)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, capture_height)
 
 # Set size of the square around the click to sample the average color from
 square_size = 11
@@ -47,11 +52,11 @@ while(True):
     ret, frame = cap.read()
 
     #Display webcam
-    frame1 = cv2.resize(frame, (win_width, win_height))
+    frame1 = cv2.resize(frame, (display_width, display_height))
     cv2.imshow('Raw', frame1)
 
     # Set the mouse callback for the raw footage window
-    cv2.setMouseCallback('Raw', on_mouse_click, frame)
+    cv2.setMouseCallback('Raw', on_mouse_click, frame1)
 
     # If a color has been picked, process the frame to find that color
     if picked_color is not None:
@@ -78,8 +83,14 @@ while(True):
 
         contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if contours:
-            # Find the largest contour
-            largest_contour = max(contours, key=cv2.contourArea)
+            valid_contours = [
+                contour for contour in contours
+                if cv2.contourArea(contour) > 500
+            ]
+
+            if valid_contours:
+                largest_contour = max(valid_contours, key=cv2.contourArea)
+
             # Draw a bounding box around the largest contour
             x, y, w, h = cv2.boundingRect(largest_contour)
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -93,15 +104,17 @@ while(True):
 
     # Display the windows
     if picked_color is not None:
-        frame2 = cv2.resize(closed, (win_width, win_height))
+        frame2 = cv2.resize(closed, (display_width, display_height))
         cv2.imshow('Thresholded', frame2)
-        frame3 = cv2.resize(frame, (win_width, win_height))
+        frame3 = cv2.resize(frame, (display_width, display_height))
         cv2.imshow('Tracked', frame3)
     
     # Position the windows
     cv2.moveWindow('Raw', 0, 0)
-    cv2.moveWindow('Thresholded', win_width, 0)
-    cv2.moveWindow('Tracked', win_width * 2, 0)
+
+    if picked_color is not None:
+        cv2.moveWindow('Thresholded', display_width, 0)
+        cv2.moveWindow('Tracked', display_width * 2, 0)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
