@@ -2,6 +2,17 @@
 import numpy as np
 import cv2
 
+# Get the screen size to set the window sizes accordingly
+try:
+    from screeninfo import get_monitors
+    monitor = get_monitors()[0]
+    screen_width = monitor.width
+    screen_height = monitor.height
+except ImportError:
+    print("screeninfo module not found. Using default screen size.")
+    screen_width = 1200
+    screen_height = 900
+
 # Initialize the webcam
 cap = cv2.VideoCapture(0)
 
@@ -11,8 +22,8 @@ windows = ["Raw", "Thresholded", "Tracked"]
 capture_width = 640
 capture_height = 480
 
-display_width = 400
-display_height = 300
+display_width = screen_width // 3
+display_height = screen_height // 3
 
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, capture_width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, capture_height)
@@ -20,11 +31,6 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, capture_height)
 # Set size of the square around the click to sample the average color from
 square_size = 11
 half_square = square_size // 2
-
-# Tolerances for thresholding
-H_tolerance = 10
-S_tolerance = 60
-V_tolerance = 60
 
 # Picked color in HSV format to be set later
 picked_color = None
@@ -63,7 +69,7 @@ def get_contour_center(contour):
 
     return (cX, cY)
 
-# Mouse callback function to pick color on click, more adaptive implementation
+# Mouse callback function to pick color on click, sets the picked_color and tolerances based on the color spread in the sampled area
 def on_mouse_click(event, x, y, flags, param):
     global picked_color, previous_center
     global H_tolerance, S_tolerance, V_tolerance
@@ -86,13 +92,13 @@ def on_mouse_click(event, x, y, flags, param):
 
         S_tolerance = int(np.clip(
             30 + 2 * color_spread[1],
-            40,
+            50,
             100
         ))
 
         V_tolerance = int(np.clip(
             30 + 2 * color_spread[2],
-            40,
+            50,
             100
         ))
 
@@ -105,6 +111,9 @@ def on_mouse_click(event, x, y, flags, param):
             f"S={S_tolerance}, "
             f"V={V_tolerance}"
         )
+
+# Instructions
+print("Click on an object to track it.\nPress 'q' to quit.")
 
 # Main loop to capture frames and process them
 while(True):
@@ -141,13 +150,17 @@ while(True):
         opened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
         closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel)
 
+        # Find contours in the thresholded image
         contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # If any contours are found, filter them based on area and find the one closest to the previous center
         if contours:
             valid_contours = [
                 contour for contour in contours
                 if cv2.contourArea(contour) > 500
             ]
 
+            # If there are valid contours, find the one closest to the previous center or the largest one if no previous center exists
             if valid_contours:
                 if previous_center is None:
                     target_contour = max(valid_contours, key=cv2.contourArea)
