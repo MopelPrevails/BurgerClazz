@@ -1,0 +1,8 @@
+source;share/aizen_object_follower/hook/cmake_prefix_path.ps1
+source;share/aizen_object_follower/hook/cmake_prefix_path.dsv
+source;share/aizen_object_follower/hook/cmake_prefix_path.sh
+source;share/aizen_object_follower/local_setup.bash
+source;share/aizen_object_follower/local_setup.dsv
+source;share/aizen_object_follower/local_setup.ps1
+source;share/aizen_object_follower/local_setup.sh
+source;share/aizen_object_follower/local_setup.zsh
