@@ -3,7 +3,7 @@
 # Logan Purkiss and Mopel Kitele
 import numpy as np
 import cv2
-from sympy import Point
+from std_msgs import Point
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
