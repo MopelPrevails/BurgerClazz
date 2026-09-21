@@ -15,6 +15,8 @@ class ObjectFinder(Node):
     def __init__(self):
         super().__init__('object_finder')
 
+        self._bridge = CvBridge()
+
         # Create a subscriber for the image topic
         self.image_subscriber = self.create_subscription(
             CompressedImage,
@@ -49,7 +51,7 @@ class ObjectFinder(Node):
             self.get_logger().error("Received target HSV message does not contain 6 values.")
             return
         self.target_hsv = np.array(msg.data, dtype=np.float32)
-        self.get_logger().info(f"Received target HSV values: {self.target_hsv[0:2]} and HSV threshold: {self.target_hsv[2:5]}")
+        self.get_logger().info(f"Received target HSV values: {self.target_hsv[0:3]} and HSV threshold: {self.target_hsv[3:6]}")
 
     def image_callback(self, msg):
         # Convert the compressed image message to a numpy array
@@ -82,22 +84,12 @@ class ObjectFinder(Node):
     def find_target(self, frame):
         # Convert the frame to HSV
         hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        h = self.target_hsv[0]
-        s = self.target_hsv[1]
-        v = self.target_hsv[2]
-        h_tolerance = self.target_hsv[3]
-        s_tolerance = self.target_hsv[4]
-        v_tolerance = self.target_hsv[5]
+        target_hsv = self.target_hsv[0:3]
+        thresholds = self.target_hsv[3:6]
 
         # Define the lower and upper bounds for thresholding
-        lower_bound = np.array([
-            max(0, h - h_tolerance), 
-            max(0, s - s_tolerance), 
-            max(0, v - v_tolerance)])
-        upper_bound = np.array([
-            min(179, h + h_tolerance), 
-            min(255, s + s_tolerance), 
-            min(255, v + v_tolerance)])
+        lower_bound = np.clip(target_hsv - thresholds, [0, 0, 0], [179, 255, 255]).astype(np.uint8)
+        upper_bound = np.clip(target_hsv + thresholds, [0, 0, 0], [179, 255, 255]).astype(np.uint8)
 
         # Threshold the HSV image to get only the colors in the range
         mask = cv2.inRange(hsv_frame, lower_bound, upper_bound)
@@ -124,7 +116,7 @@ class ObjectFinder(Node):
         return False, None, None, None
         
     # Get the center of any contour
-    def get_contour_center(contour):
+    def get_contour_center(self, contour):
         M = cv2.moments(contour)
 
         if M["m00"] == 0:
