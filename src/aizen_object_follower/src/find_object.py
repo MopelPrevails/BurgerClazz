@@ -60,7 +60,6 @@ class ObjectFinder(Node):
             return
 
         if not hasattr(self, 'target_hsv'):
-            self.get_logger().warn("Target HSV values not set yet. Skipping frame processing.")
             return
         
         centroid_msg = Point()
