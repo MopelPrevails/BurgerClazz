@@ -45,6 +45,9 @@ class ObjectFinder(Node):
 
     def hsv_callback(self, msg):
         # Store the target HSV values from the message
+        if len(msg.data) != 6:
+            self.get_logger().error("Received target HSV message does not contain 6 values.")
+            return
         self.target_hsv = np.array(msg.data, dtype=np.float32)
         self.get_logger().info(f"Received target HSV values: {self.target_hsv[0:2]} and HSV threshold: {self.target_hsv[2:5]}")
 
