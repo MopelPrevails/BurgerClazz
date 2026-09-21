@@ -144,7 +144,7 @@ def main(args=None):
     rclpy.init(args=args)
     object_finder = ObjectFinder()
     try:
-        rclpy.spin_once(object_finder)
+        rclpy.spin(object_finder)
     except KeyboardInterrupt:
         pass
     finally:
