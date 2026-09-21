@@ -68,8 +68,8 @@ class ObjectFinder(Node):
         found, cx, cy, contour = self.find_target(frame)
 
         if found:
-            centroid_msg.x = cx
-            centroid_msg.y = cy
+            centroid_msg.x = float(cx)
+            centroid_msg.y = float(cy)
             centroid_msg.z = 0.0
 
             # Draw a bounding box around the detected object
