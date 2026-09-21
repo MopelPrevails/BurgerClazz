@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+# Logan Purkiss and Mopel Kitele
 import numpy as np
 import cv2
 
