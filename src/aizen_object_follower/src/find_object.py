@@ -79,8 +79,7 @@ class ObjectFinder(Node):
             cv2.putText(frame, f"({cx}, {cy})", (cx + 10, cy - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
             self.centroid_publisher.publish(centroid_msg)
-            
-        self.publish_compressed_image(frame)
+            self.publish_compressed_image(frame)
 
     def find_target(self, frame):
         # Convert the frame to HSV
