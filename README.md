@@ -1,11 +1,15 @@
 What Logan has cooked up
 
 find_object.py - Lab1 Script, no longer being used
+
 color_finder.py - Script that subscribes to the raw image topic and performs the hsv image transformation and color and threshold value selection. 
                   It outputs a float32 array where the first 3 floats are h,s,v and the last 3 are the corresponding thresholds
+                  
 src/aizen_object_follower - Package Folder
+
 src/aizen_object_follower/src/find_object.py - Node that runs on the robot. Subscribes to the raw image and the float32 containing the hsv values. It runs the thresholding and other processing techniques
                     used in the lab 1 code. It then publishes the same processed image we got in Lab 1 as a compressed image. It also publishes the centroid as a geometry_msgs/Point where z is 0.
+                    
 processed_image_viewer.py - This node subscribes to the processed image and its code is essentially just the provided basic image viewer code given to us.
 
 The build, install, and log folders are all for colcon build things. If running the package is giving you trouble maybe try removing these three folders (NOT src) and rerunning colcon build it fixed it for me
