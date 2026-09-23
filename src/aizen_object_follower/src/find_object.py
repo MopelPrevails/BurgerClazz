@@ -9,6 +9,12 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float32MultiArray
+from rclpy.qos import (
+QoSProfile,
+QoSDurabilityPolicy,
+QoSReliabilityPolicy,
+QoSHistoryPolicy
+)
 
 class ObjectFinder(Node):
 
@@ -17,12 +23,20 @@ class ObjectFinder(Node):
 
         self._bridge = CvBridge()
 
+        image_qos = QoSProfile(
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            durability=QoSDurabilityPolicy.VOLATILE,
+            depth=1
+    )
+
+
         # Create a subscriber for the image topic
         self.image_subscriber = self.create_subscription(
             CompressedImage,
             '/image_raw/compressed',
             self.image_callback,
-            10
+            image_qos
         )
         self.hsv_subscriber = self.create_subscription(
             Float32MultiArray,
@@ -63,11 +77,11 @@ class ObjectFinder(Node):
 
         if not hasattr(self, 'target_hsv'):
             return
-        
-        centroid_msg = Point()
+
         found, cx, cy, contour = self.find_target(frame)
 
         if found:
+            centroid_msg = Point()
             centroid_msg.x = float(cx)
             centroid_msg.y = float(cy)
             centroid_msg.z = 0.0
@@ -110,11 +124,15 @@ class ObjectFinder(Node):
 
             if valid_contours:
                 target_contour = max(valid_contours, key=cv2.contourArea)
-                cX, cY = self.get_contour_center(target_contour)
-                return True, cX, cY, target_contour
+
+                center = self.get_contour_center(target_contour)
+
+                if center is not None:
+                    cX, cY = center
+                    return True, cX, cY, target_contour
 
         return False, None, None, None
-        
+
     # Get the center of any contour
     def get_contour_center(self, contour):
         M = cv2.moments(contour)
