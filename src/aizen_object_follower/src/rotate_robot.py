@@ -19,7 +19,7 @@ class RotateRobot(Node):
         self.deadband = 20.0
 
         # Rotation speed
-        self.angular_speed = 0.3
+        self.angular_speed = 0.7
 
         self.centroid_subscriber = self.create_subscription(
             Point,
