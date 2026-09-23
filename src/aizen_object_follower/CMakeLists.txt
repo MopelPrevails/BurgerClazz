@@ -13,7 +13,7 @@ find_package(ament_cmake REQUIRED)
 
 install(PROGRAMS
   src/find_object.py
-  sec/rotate_robot.py
+  src/rotate_robot.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
