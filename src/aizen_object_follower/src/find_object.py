@@ -119,7 +119,7 @@ class ObjectFinder(Node):
         if contours:
             valid_contours = [
                 contour for contour in contours
-                if cv2.contourArea(contour) > 500
+                if cv2.contourArea(contour) > 50
             ]
 
             if valid_contours:
